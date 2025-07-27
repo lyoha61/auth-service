@@ -1,11 +1,11 @@
 import { User } from "../models/User.js";
 
-export class AuthController {
+export default class AuthController {
 
 	async register(req, res) {
-		const { email, password } = req.body;
+		const { name, email, password } = req.body;
 
-		const user = new User({ email, password });
+		const user = new User({ name, email, password });
 
 		await user.save();
 
