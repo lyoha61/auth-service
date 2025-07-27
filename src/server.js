@@ -5,7 +5,7 @@ import validateRegisterMiddleware from './middlewares/validateRegisterMiddleware
 
 const app = express();
 await connect(process.env.MONGO_URI)
-console.log('MongoDB connected');
+console.log('MongoDB connected ✅');
 
 app.use(express.json());
 
