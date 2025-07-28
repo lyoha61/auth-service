@@ -11,7 +11,9 @@ app.use(express.json());
 
 const authController = new AuthController();
 
-app.get('/register', validateRegisterMiddleware, authController.register.bind(authController));
+app.post('/register', validateRegisterMiddleware, authController.register.bind(authController));
+
+app.post('/login', authController.login.bind(authController));
 
 app.listen(3000, function() {
 	console.log('Auth service running in 3000');

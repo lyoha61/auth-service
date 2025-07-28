@@ -3,6 +3,27 @@ import bcrypt from 'bcrypt';
 
 export default class AuthController {
 
+	async login (req, res) {
+		try {
+			const { email, password }  = req.body;
+			const user = await User.findOne({email : email});
+
+			if (!user) {
+				return res.status(401).json({ message: 'Неверный email или пароль' });
+			}
+
+			const isMatch = await bcrypt.compare(password, user.password);
+			if (!isMatch) return res.status(401).json({ message: 'Неверный email или пароль' });
+
+			const {password: _, ...userData} = user.toObject();
+
+			return res.status(200).json({ user: userData });
+
+		} catch (err) {
+			return res.status(500).json({ error: err.message });
+		}
+	}
+
 	async register(req, res) {
 		try {
 			const { name, email, password } = req.body;
