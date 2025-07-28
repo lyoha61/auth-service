@@ -11,6 +11,15 @@ services:
       - .env
     depends_on:
       - mongodb
+      # - mailhog
+  
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    platform: linux/amd64
+    ports:
+      - "1025:1025" 
+      - "8025:8025"
   mongodb:
     image: mongo:latest
     ports:
