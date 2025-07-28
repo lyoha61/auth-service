@@ -15,6 +15,8 @@ app.post('/register', validateRegisterMiddleware, authController.register.bind(a
 
 app.post('/login', authController.login.bind(authController));
 
+app.post('/confirm-email', authController.confirmEmail.bind(authController));
+
 app.listen(3000, function() {
 	console.log('Auth service running in 3000');
 })
