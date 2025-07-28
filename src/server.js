@@ -13,6 +13,8 @@ const authController = new AuthController();
 
 app.get('/register', validateRegisterMiddleware, authController.register.bind(authController));
 
+app.post('/confirm-email', authController.confirmEmail.bind(authController));
+
 app.listen(3000, function() {
 	console.log('Auth service running in 3000');
 })

@@ -1,8 +1,35 @@
-import { sendEmail } from "../mailService.js";
+import { sendEmail } from "../services/mailService.js";
 import User from "../models/User.js";
 import bcrypt from 'bcrypt';
+import redisClient from "../services/redisService.js";
 
 export default class AuthController {
+
+	async confirmEmail(req, res) {
+		try {
+			const { email, code } = req.body;
+
+			const savedCode = await redisClient.get(`email_confirm_code:${email}`);
+
+			if (!savedCode) {
+				return res.status(400).json({ error: 'Код подтверждения не найден или истёк' });
+			}
+
+			if (savedCode !== code) {
+				return res.status(400).json({ error: 'Неверный код подтверждения' });
+			}
+
+			await User.updateOne({ email }, { email_verified: true });
+
+			await redisClient.del(`email_confirm_code:${email}`)
+
+			res.json({ 
+				message: 'Email успешно подтвержден' 
+			});
+		} catch (err) {
+			return res.status(500).json({ error: err.message });
+		}
+	}
 
 	async register(req, res) {
 		try {
@@ -23,6 +50,8 @@ export default class AuthController {
 			await user.save();
 
 			const code = Math.floor(1000 + Math.random() * 9000).toString();
+			
+			await redisClient.set(`email_confirm_code:${email}`, code, {EX: 600});
 
 			await sendEmail(email, 'Код подтверждения регистрации', `Ваш код подтверждения: ${code}`);
 	

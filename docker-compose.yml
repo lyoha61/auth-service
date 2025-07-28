@@ -11,7 +11,8 @@ services:
       - .env
     depends_on:
       - mongodb
-      # - mailhog
+      - mailhog
+      - redis
   
   mailhog:
     image: mailhog/mailhog
@@ -26,6 +27,11 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/data/db
+  
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
 
 volumes:
   mongodata:
