@@ -8,7 +8,7 @@ export default class AuthController {
 	async login (req, res) {
 		try {
 			const { email, password }  = req.body;
-			const user = await User.findOne({email : email});
+			const user = await User.findOne({ email: email });
 
 			if (!user) {
 				return res.status(401).json({ message: 'Неверный email или пароль' });
