@@ -2,8 +2,22 @@ import { sendEmail } from "../services/mailService.js";
 import User from "../models/User.js";
 import bcrypt from 'bcrypt';
 import redisClient from "../services/redisService.js";
+import jwt from "jsonwebtoken";
 
 export default class AuthController {
+
+	constructor () {
+		this.ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
+		this.REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+	}
+
+	_generateAccessToken(payload) {
+		return jwt.sign(payload, this.ACCESS_TOKEN_SECRET, {expiresIn: '15m'})
+	}
+
+	_generateRefreshToken(payload) {
+		return jwt.sign(payload, this.REFRESH_TOKEN_SECRET, {expiresIn: '7d'});
+	}
 
 	async login (req, res) {
 		try {
@@ -19,7 +33,14 @@ export default class AuthController {
 
 			const {password: _, ...userData} = user.toObject();
 
-			return res.status(200).json({ user: userData });
+			const accessToken = this._generateAccessToken({ id: userData._id});
+			const refreshToken = this._generateRefreshToken({ id: userData._id });
+
+			return res.status(200).json({ 
+				user: userData, 
+				access_token: accessToken,
+				refresh_token: refreshToken
+			});
 		} catch (err) {
 			return res.status(500).json({ error: err.message });
 		}
