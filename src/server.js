@@ -16,6 +16,8 @@ app.post('/register', validateRegisterMiddleware, authController.register.bind(a
 
 app.post('/login', validateLoginMiddleware, authController.login.bind(authController));
 
+app.post('/logout', authController.logout.bind(authController));
+
 app.post('/confirm-email', authController.confirmEmail.bind(authController));
 
 app.post('/refresh-token', authController.refreshAccessToken.bind(authController));

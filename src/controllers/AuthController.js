@@ -91,6 +91,23 @@ export default class AuthController {
 		}
 	}
 
+	async logout(req, res) {
+		try {
+			const { refresh_token:  refreshToken } = req.body;
+
+			const payload = jwt.verify(refreshToken, this.REFRESH_TOKEN_SECRET);
+
+			const tokenId = payload.token_id;
+
+			await redisClient.del(`refresh_token:${tokenId}`);
+
+			return  res.status(200).json({ message: 'Logged out successfully'});
+			
+		} catch (err) {
+			return res.status(400).json({ error: err.message });
+		}
+	}
+
 	async confirmEmail(req, res) {
 		try {
 			const { email, code } = req.body;
