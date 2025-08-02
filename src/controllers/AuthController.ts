@@ -1,35 +1,54 @@
-import { sendEmail } from "../services/mailService.js";
+import { NextFunction, Request, Response } from "express";
+import sendEmail from "../services/mailService.js";
 import User from "../models/User.js";
 import bcrypt from 'bcrypt';
 import redisClient from "../services/redisService.js";
 import { v4 as uuidv4 } from 'uuid';
 import jwt from "jsonwebtoken";
+import { jwtPayloadSchema } from "../validations/jwt.js";
 
 export default class AuthController {
 
+	private ACCESS_TOKEN_SECRET: string;
+	private REFRESH_TOKEN_SECRET: string;
+
 	constructor () {
-		this.ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
-		this.REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+
+		const accessSecret = process.env.ACCESS_TOKEN_SECRET;
+		const refreshSecret = process.env.REFRESH_TOKEN_SECRET
+
+		if (!accessSecret|| !refreshSecret) {
+			throw new Error('No secrets set in env file');
+		}
+
+		this.ACCESS_TOKEN_SECRET = accessSecret;
+		this.REFRESH_TOKEN_SECRET = refreshSecret;
 	}
 
-	_generateAccessToken(payload) {
+	_generateAccessToken(payload: object) {
 		return jwt.sign(payload, this.ACCESS_TOKEN_SECRET, {expiresIn: '15m'})
 	}
 
-	_generateRefreshToken(payload, tokenId) {
+	_generateRefreshToken(payload: object, tokenId: string) {
 		return jwt.sign(
 			{...payload, token_id: tokenId },
 			this.REFRESH_TOKEN_SECRET, 
 			{ expiresIn: '7d' });
 	}
 
-	async refreshAccessToken(req, res) {
+	async refreshAccessToken(req: Request, res: Response, next: NextFunction) {
 		const { refresh_token: refreshToken } = req.body;
 
 		if (!refreshToken) return res.status(401).json({ error: 'Refresh token required' });
 
 		try {
-			const payload = jwt.verify(refreshToken, this.REFRESH_TOKEN_SECRET);
+			const rawPayload = jwt.verify(refreshToken, this.REFRESH_TOKEN_SECRET);
+
+			const { value: payload, error } = jwtPayloadSchema.validate(rawPayload);
+
+			if (error) {
+				return res.status(400).json({ error: error });
+			}
 
 			const genuineRefreshToken = await redisClient.get(
 				`refresh_token:${payload.token_id}`
@@ -49,11 +68,11 @@ export default class AuthController {
 			});
 
 		} catch (err) {
-			return res.status(400).json({ error: err.message});
+			next(err);
 		}
 	}
 
-	async login (req, res) {
+	async login (req: Request, res: Response, next: NextFunction) {
 		try {
 			const { email, password }  = req.body;
 			const user = await User.findOne({ email: email });
@@ -62,7 +81,7 @@ export default class AuthController {
 				return res.status(401).json({ message: 'Неверный email или пароль' });
 			}
 
-			const isMatch = await bcrypt.compare(password, user.password);
+			const isMatch = await bcrypt.compare(password, user.password!);
 			if (!isMatch) return res.status(401).json({ message: 'Неверный email или пароль' });
 
 			const { password: _, ...userData } = user.toObject();
@@ -87,15 +106,21 @@ export default class AuthController {
 				refresh_token: refreshToken
 			});
 		} catch (err) {
-			return res.status(500).json({ error: err.message });
+			next(err);
 		}
 	}
 
-	async logout(req, res) {
+	async logout(req: Request, res: Response, next: NextFunction) {
 		try {
 			const { refresh_token:  refreshToken } = req.body;
 
-			const payload = jwt.verify(refreshToken, this.REFRESH_TOKEN_SECRET);
+			const rawPayload = jwt.verify(refreshToken, this.REFRESH_TOKEN_SECRET);
+
+			const { value: payload, error } = jwtPayloadSchema.validate(rawPayload);
+
+			if (error) {
+				return res.status(401).json({ error: error.message });
+			}
 
 			const tokenId = payload.token_id;
 
@@ -104,11 +129,11 @@ export default class AuthController {
 			return  res.status(200).json({ message: 'Logged out successfully'});
 			
 		} catch (err) {
-			return res.status(400).json({ error: err.message });
+			next(err);
 		}
 	}
 
-	async confirmEmail(req, res) {
+	async confirmEmail(req: Request, res: Response, next: NextFunction) {
 		try {
 			const { email, code } = req.body;
 
@@ -130,11 +155,11 @@ export default class AuthController {
 				message: 'Email успешно подтвержден' 
 			});
 		} catch (err) {
-			return res.status(500).json({ error: err.message });
+			next(err);
 		}
 	}
 
-	async register(req, res) {
+	async register(req: Request, res: Response, next: NextFunction) {
 		try {
 			const { name, email, password } = req.body;
 	
@@ -164,8 +189,7 @@ export default class AuthController {
 	
 			return res.status(201).json({message: 'Пользователь создан', userData});
 		} catch (err) {
-			console.error('Ошибка регистрации: ', err);
-			return res.status(500).json({ error: 'Ошибка при регистрации' });
+			next(err);
 		}
 	}
 }

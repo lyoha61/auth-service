@@ -1,6 +1,7 @@
 import Joi from "joi";
+import { Request, Response, NextFunction } from "express";
 
-export default function validateRegisterMiddleware(req, res, next) {
+export default function validateRegisterMiddleware(req: Request, res: Response, next: NextFunction) {
 	const registerSchema = Joi.object({
 		name: Joi.string()
 			.min(3)
@@ -26,7 +27,7 @@ export default function validateRegisterMiddleware(req, res, next) {
 	const { error } = registerSchema.validate(req.body);
 
 	if (error) {
-		return res.status(400).json({ error: error.details[0].message });
+		return res.status(400).json({ error: error.details?.[0]?.message });
 	}
 
 	next();

@@ -6,7 +6,11 @@ const transporter = nodemailer.createTransport({
 	secure: process.env.MAILHOG_SECURE === 'true'
 });
 
-export async function sendEmail(to, subject, text) {
+export default async function sendEmail(
+	to: string, 
+	subject: string, 
+	text: string
+): Promise<void> {
 	const info = await transporter.sendMail({
 		from: '"Auth Service" <no-reply@example.com>',
 		to,
