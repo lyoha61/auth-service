@@ -2,6 +2,7 @@ import { sendEmail } from "../services/mailService.js";
 import User from "../models/User.js";
 import bcrypt from 'bcrypt';
 import redisClient from "../services/redisService.js";
+import { v4 as uuidv4 } from 'uuid';
 import jwt from "jsonwebtoken";
 
 export default class AuthController {
@@ -15,8 +16,41 @@ export default class AuthController {
 		return jwt.sign(payload, this.ACCESS_TOKEN_SECRET, {expiresIn: '15m'})
 	}
 
-	_generateRefreshToken(payload) {
-		return jwt.sign(payload, this.REFRESH_TOKEN_SECRET, {expiresIn: '7d'});
+	_generateRefreshToken(payload, tokenId) {
+		return jwt.sign(
+			{...payload, token_id: tokenId },
+			this.REFRESH_TOKEN_SECRET, 
+			{ expiresIn: '7d' });
+	}
+
+	async refreshAccessToken(req, res) {
+		const { refresh_token: refreshToken } = req.body;
+
+		if (!refreshToken) return res.status(401).json({ error: 'Refresh token required' });
+
+		try {
+			const payload = jwt.verify(refreshToken, this.REFRESH_TOKEN_SECRET);
+
+			const genuineRefreshToken = await redisClient.get(
+				`refresh_token:${payload.token_id}`
+			);
+
+			console.log(genuineRefreshToken);
+			if (refreshToken !== genuineRefreshToken) {
+				throw new Error('Invalid refresh token')
+			}
+
+			const { exp, iat, ...safePayload } = payload;
+
+			const accessToken = this._generateAccessToken(safePayload);
+
+			return res.status(200).json({
+				'access_token': accessToken
+			});
+
+		} catch (err) {
+			return res.status(400).json({ error: err.message});
+		}
 	}
 
 	async login (req, res) {
@@ -31,10 +65,21 @@ export default class AuthController {
 			const isMatch = await bcrypt.compare(password, user.password);
 			if (!isMatch) return res.status(401).json({ message: 'Неверный email или пароль' });
 
-			const {password: _, ...userData} = user.toObject();
+			const { password: _, ...userData } = user.toObject();
+
+			const refreshTokenId = uuidv4();
 
 			const accessToken = this._generateAccessToken({ id: userData._id});
-			const refreshToken = this._generateRefreshToken({ id: userData._id });
+			const refreshToken = this._generateRefreshToken(
+				{ id: userData._id }, 
+				refreshTokenId
+			);
+
+			await redisClient.set(
+				`refresh_token:${refreshTokenId}`,
+				refreshToken,
+				{ EX: 60 * 60 * 24 * 7 }
+			)
 
 			return res.status(200).json({ 
 				user: userData, 
