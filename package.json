@@ -4,7 +4,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/server.js",
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "node dist/server.js",
+    "dev": "concurrently \"npm run watch\" \"nodemon dist/server.js\" ",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -22,6 +25,13 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.1.0",
+    "@types/nodemailer": "^6.4.17",
+    "concurrently": "^9.2.0",
+    "nodemon": "^3.1.10",
+    "typescript": "^5.9.2"
   }
 }

@@ -1,6 +1,7 @@
 import Joi from "joi";
+import { Request, Response, NextFunction } from "express";
 
-export default function validateLoginMiddleware (req, res, next) {
+export default function validateLoginMiddleware (req: Request, res: Response, next: NextFunction) {
 	try {
 		const loginSchema = Joi.object({
 			name: Joi.string(),
@@ -20,13 +21,13 @@ export default function validateLoginMiddleware (req, res, next) {
 		const { error, value } = loginSchema.validate(req.body);
 
 		if (error) {
-			throw new Error(error.details[0].message);
+			throw new Error(error.details?.[0]?.message);
 		}
 
 		req.login = value.name || value.email;
 
 		next();
 	} catch(err) {
-		res.status(400).json({error: err.message});
+		next(err);
 	}
 }
