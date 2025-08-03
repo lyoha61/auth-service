@@ -3,28 +3,50 @@ Authentication Service
 Authentication Service — это микросервис для регистрации, аутентификации и авторизации пользователей.
 Реализован на Node.js с использованием Express и JWT.
 Сервис поддерживает регистрацию новых пользователей, вход в систему, выдачу и проверку JWT токенов.
-Для хранения данных используется база данных MongoDB
+Для хранения данных используется база данных MongoDB и временное хранилище Redis
 
-Технологии
+Быстрый старт 
+
+git clone https://github.com/lyoshka61/authentication-service
+
+cd authentication-service
+
+cp .env.example .env
+# Отредактируйте .env, указав настройки базы и секреты
+
+docker-compose up --build -d
+
+Стек
 Node.js
 Express
-JWT (jsonwebtoken)
-bcrypt
+JWT
+Redis
 MongoDB / PostgreSQL
-dotenv
-Docker (опционально)
+Docker
 
 Функционал
 Регистрация пользователей (Signup)
+POST /auth/register
+Тело запроса: { name, email, password }
+
 Вход пользователей (Signin)
+POST auth/login
+Тело запроса: { email/name, password }
+
 Защищённые маршруты (Authorization)
 Обновление токена (Refresh tokens)
+POST /auth/refresh-token
+Тело запроса: { refresh_token }
+
 Роли и права доступа (Roles & Permissions)
 Выход из системы (Logout)
+POST auth/logout
+Тело запроса: { refresh_token }
+
 Восстановление и смена пароля (опционально)
 Валидация и обработка ошибок
 
-Дополнительный функционал (для расширения)
+Потенциальный функционал
 Поддержка OAuth / соцсетей (Google, Facebook и т.д.)
 Двухфакторная аутентификация (2FA)
 Логирование попыток входа и подозрительных действий

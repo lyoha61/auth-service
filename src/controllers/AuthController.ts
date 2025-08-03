@@ -25,11 +25,11 @@ export default class AuthController {
 		this.REFRESH_TOKEN_SECRET = refreshSecret;
 	}
 
-	_generateAccessToken(payload: object) {
+	private generateAccessToken(payload: object) {
 		return jwt.sign(payload, this.ACCESS_TOKEN_SECRET, {expiresIn: '15m'})
 	}
 
-	_generateRefreshToken(payload: object, tokenId: string) {
+	private generateRefreshToken(payload: object, tokenId: string) {
 		return jwt.sign(
 			{...payload, token_id: tokenId },
 			this.REFRESH_TOKEN_SECRET, 
@@ -61,7 +61,7 @@ export default class AuthController {
 
 			const { exp, iat, ...safePayload } = payload;
 
-			const accessToken = this._generateAccessToken(safePayload);
+			const accessToken = this.generateAccessToken(safePayload);
 
 			return res.status(200).json({
 				'access_token': accessToken
@@ -88,8 +88,8 @@ export default class AuthController {
 
 			const refreshTokenId = uuidv4();
 
-			const accessToken = this._generateAccessToken({ id: userData._id});
-			const refreshToken = this._generateRefreshToken(
+			const accessToken = this.generateAccessToken({ id: userData._id});
+			const refreshToken = this.generateRefreshToken(
 				{ id: userData._id }, 
 				refreshTokenId
 			);
