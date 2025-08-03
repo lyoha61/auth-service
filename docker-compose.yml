@@ -1,11 +1,11 @@
 services: 
-  authService:
-    image: node:latest
+  authservice:
+    build: .
     ports:
       - "3000:3000"
     volumes:
       - ./:/app
-    working_dir: /app
+      - /app/node_modules  
     command: npm run dev
     env_file:
       - .env
