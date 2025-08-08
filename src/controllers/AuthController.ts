@@ -2,10 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import sendEmail from "../services/mailService.js";
 import User from "../models/User.js";
 import bcrypt from 'bcrypt';
-import redisClient from "../services/redisService.js";
+import {getRedisClient} from "../services/redisService.js";
 import { v4 as uuidv4 } from 'uuid';
 import jwt from "jsonwebtoken";
 import { jwtPayloadSchema } from "../validations/jwt.js";
+
+
+let redisClient = getRedisClient();
 
 export default class AuthController {
 
@@ -78,11 +81,11 @@ export default class AuthController {
 			const user = await User.findOne({ email: email });
 
 			if (!user) {
-				return res.status(401).json({ message: 'Неверный email или пароль' });
+				return res.status(401).json({ error: 'Неверный email или пароль' });
 			}
 
 			const isMatch = await bcrypt.compare(password, user.password!);
-			if (!isMatch) return res.status(401).json({ message: 'Неверный email или пароль' });
+			if (!isMatch) return res.status(401).json({ error: 'Неверный email или пароль' });
 
 			const { password: _, ...userData } = user.toObject();
 
@@ -187,7 +190,7 @@ export default class AuthController {
 			
 			const userData = { id: userId, name: userName, email: userEmail }
 	
-			return res.status(201).json({message: 'Пользователь создан', userData});
+			return res.status(201).json({message: 'Пользователь создан', user: userData});
 		} catch (err) {
 			next(err);
 		}
