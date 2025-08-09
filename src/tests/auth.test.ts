@@ -1,5 +1,13 @@
-import app from '../app.js';
 import request from 'supertest';
+import { Express } from 'express';
+
+let app: Express;
+
+beforeAll(async () => {
+  const {default: createApp } = await import ('../app.js');
+  app = await createApp();
+})
+
 
 describe('Auth Routes', () => {
   describe('POST /auth/register', () => {

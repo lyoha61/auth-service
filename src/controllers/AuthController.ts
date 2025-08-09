@@ -2,20 +2,18 @@ import { NextFunction, Request, Response } from "express";
 import sendEmail from "../services/mailService.js";
 import User from "../models/User.js";
 import bcrypt from 'bcrypt';
-import {getRedisClient} from "../services/redisService.js";
 import { v4 as uuidv4 } from 'uuid';
 import jwt from "jsonwebtoken";
 import { jwtPayloadSchema } from "../validations/jwt.js";
+import { IRedisService } from "../interfaces/redisService.js";
 
-
-let redisClient = getRedisClient();
 
 export default class AuthController {
 
 	private ACCESS_TOKEN_SECRET: string;
 	private REFRESH_TOKEN_SECRET: string;
 
-	constructor () {
+	constructor (private redisService: IRedisService) {
 
 		const accessSecret = process.env.ACCESS_TOKEN_SECRET;
 		const refreshSecret = process.env.REFRESH_TOKEN_SECRET
@@ -53,7 +51,7 @@ export default class AuthController {
 				return res.status(400).json({ error: error });
 			}
 
-			const genuineRefreshToken = await redisClient.get(
+			const genuineRefreshToken = await this.redisService.get(
 				`refresh_token:${payload.token_id}`
 			);
 
@@ -97,7 +95,7 @@ export default class AuthController {
 				refreshTokenId
 			);
 
-			await redisClient.set(
+			await this.redisService.set(
 				`refresh_token:${refreshTokenId}`,
 				refreshToken,
 				{ EX: 60 * 60 * 24 * 7 }
@@ -127,7 +125,7 @@ export default class AuthController {
 
 			const tokenId = payload.token_id;
 
-			await redisClient.del(`refresh_token:${tokenId}`);
+			await this.redisService.del(`refresh_token:${tokenId}`);
 
 			return  res.status(200).json({ message: 'Logged out successfully'});
 			
@@ -140,7 +138,7 @@ export default class AuthController {
 		try {
 			const { email, code } = req.body;
 
-			const savedCode = await redisClient.get(`email_confirm_code:${email}`);
+			const savedCode = await this.redisService.get(`email_confirm_code:${email}`);
 
 			if (!savedCode) {
 				return res.status(400).json({ error: 'Код подтверждения не найден или истёк' });
@@ -152,7 +150,7 @@ export default class AuthController {
 
 			await User.updateOne({ email }, { email_verified: true });
 
-			await redisClient.del(`email_confirm_code:${email}`)
+			await this.redisService.del(`email_confirm_code:${email}`)
 
 			res.json({ 
 				message: 'Email успешно подтвержден' 
@@ -182,7 +180,7 @@ export default class AuthController {
 
 			const code = Math.floor(1000 + Math.random() * 9000).toString();
 			
-			await redisClient.set(`email_confirm_code:${email}`, code, {EX: 600});
+			await this.redisService.set(`email_confirm_code:${email}`, code, {EX: 600});
 
 			await sendEmail(email, 'Код подтверждения регистрации', `Ваш код подтверждения: ${code}`);
 	

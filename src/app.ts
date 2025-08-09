@@ -1,21 +1,26 @@
 import express, { Request, Response, NextFunction } from 'express';
 import connect from './config/db.js';
-import authRouter from './routes/auth.routes.js';
-import { connectRedis } from './services/redisService.js';
+import { connectRedis, getRedisClient } from './config/redisClient.js';
+import RedisService from './services/redisService.js';
+import createAuthRouter from './routes/auth.routes.js';
 
-const app = express();
-await connect();
-console.log('MongoDB connected ✅');
+export default async function createApp() {
+	await connect();
+	console.log('MongoDB connected ✅');
 
-await connectRedis();
+	const redisClient = await getRedisClient();
+	await connectRedis();
+	const redisService =  new RedisService(redisClient);
 
-app.use(express.json());
+	const app = express();
 
-app.use('/auth', authRouter);
+	app.use(express.json());
+	app.use('/auth', createAuthRouter(redisService));
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-	console.error(err);
-})
+	app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+		console.error(err);
+	})
 
+	return app;
+} 
 
-export default app;

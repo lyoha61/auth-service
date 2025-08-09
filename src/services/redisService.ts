@@ -1,30 +1,26 @@
-import {createClient, RedisClientType} from 'redis';
+import { createClient, RedisClientType } from 'redis';
+import { IRedisService } from '../interfaces/redisService.js';
 
-let redisClient: RedisClientType;
+export default class RedisService implements IRedisService  {
 
-export function getRedisClient() {
-	if(!redisClient) {
-		redisClient = createClient({
-			socket: {
-				host: process.env.REDIS_HOST || 'localhost',
-				port:  process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : 6379,
-			}
-		});
-		redisClient.on('error', (err) => console.error('Redis Client Error', err));
-	}
-	return redisClient;
-}
+	constructor (private client: RedisClientType) {}
 
-export async function connectRedis() {
-	if (!redisClient) getRedisClient();
+	public async get<T>(key: string): Promise<T | string | null> {
+		const data = await this.client.get(key);
+		if (!data) return null;
 
-	try {
-		if (redisClient.isOpen !== false) {
-			await redisClient.connect(); 
-			console.log('Redis connected');
+		try {
+			return await JSON.parse(data) as T;
+		} catch {
+			return data;
 		}
-	} catch (err) {
-		console.error('Redis connect failed: ', err);
-		process.exit(1);
+	}
+
+	public async set (key: string, value: any, options?: { EX?:number }): Promise<void> {
+		await this.client.set(key, value, options);
+	}
+
+	public async del (key: string): Promise<void> {
+		await this.client.del(key);
 	}
 }

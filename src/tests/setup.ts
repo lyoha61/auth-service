@@ -1,20 +1,19 @@
-import { jest, describe, test, expect } from '@jest/globals';
+import { jest } from '@jest/globals';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
-import * as nodemailer from 'nodemailer';
 import dotenv from 'dotenv'
 dotenv.config() 
 
 jest.mock('redis', () => ({
   createClient: jest.fn(() => ({
-    connect: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-    on: jest.fn(),
-    get: jest.fn<(key: string) => Promise<string | null>>().mockResolvedValue('mocked_value'),
-    set: jest.fn<(key: string, value: string) => Promise<'OK'>>().mockResolvedValue('OK'),
-    flushAll: jest.fn<() => Promise<'OK'>>().mockResolvedValue('OK'),
-    quit: jest.fn<() => Promise<'OK'>>().mockResolvedValue('OK'),
-    isOpen: true,
-  })),
+      connect: jest.fn<() => Promise <void>>().mockResolvedValue(undefined),
+      on: jest.fn(),
+      get: jest.fn<() => Promise <string>>().mockResolvedValue('mocked_value'),
+      set: jest.fn<() => Promise<string>>().mockResolvedValue('OK'),
+      flushAll: jest.fn<() => Promise<string>>().mockResolvedValue('OK'),
+      quit: jest.fn<() => Promise<string>>().mockResolvedValue('OK'),
+      isOpen: true,
+    })),
 }));
 
 jest.mock('nodemailer', () => ({
@@ -24,15 +23,17 @@ jest.mock('nodemailer', () => ({
 }));
 
 let mongo: MongoMemoryServer;
-let redis: any;
+let redis: any
 
 beforeAll(async () => {
-  const mod =  await import('../services/redisService.js');
-  redis = mod.getRedisClient();
+  const { connectRedis } = await import('../config/redisClient.js');
+  redis = connectRedis();
 
 
   mongo = await MongoMemoryServer.create();
   const uri = mongo.getUri();
+
+  process.env.MONGO_URI = uri;
 
   await mongoose.connect(uri, {
     dbName: 'test',

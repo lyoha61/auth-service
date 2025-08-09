@@ -1,6 +1,12 @@
-import app from "./app.js";
+import createApp from "./app.js";
 
-app.listen(3000, function() {
+async function start() {
+	const app = await createApp();
+
+	app.listen(3000, function() {
 	console.log('Auth service running in 3000');
-})
+	})
+}
+
+start();
 
