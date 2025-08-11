@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import logger from '../logger.js';
 
 const transporter = nodemailer.createTransport({
 	host: process.env.MAILHOG_HOST,
@@ -17,5 +18,5 @@ export default async function sendEmail(
 		subject,
 		text
 	});
-	console.log('Email sent: ', info.messageId);
+	logger.info(`Email sent. Message id: ${info.messageId}`);
 }

@@ -21,7 +21,6 @@ describe('Auth Routes', () => {
         });
       
       expect(res.status).toBe(201);  
-      console.log(res.body);
       expect(res.body).toHaveProperty('user');
       expect(res.body.user).toHaveProperty('email', 'test@example.com');
     }, 15000);
@@ -60,6 +59,18 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('access_token');
       expect(res.body).toHaveProperty('refresh_token');
+    });
+
+    it('должен вернуть ошибку при неверном логине', async () => {
+      const res = await request(app)
+        .post('/auth/login')
+        .send({
+          email: 'invalidLogin@example.com',
+          password: 'WrongPassword',
+        });
+
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty('error');
     });
 
     it('должен вернуть ошибку при неверном пароле', async () => {
