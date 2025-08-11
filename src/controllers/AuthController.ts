@@ -6,56 +6,53 @@ import { v4 as uuidv4 } from 'uuid';
 import jwt from "jsonwebtoken";
 import { jwtPayloadSchema } from "../validations/jwt.js";
 import { IRedisService } from "../interfaces/redisService.js";
+import { IAuthConfig } from "../config/auth.config.js";
 
 
 export default class AuthController {
 
-	private ACCESS_TOKEN_SECRET: string;
-	private REFRESH_TOKEN_SECRET: string;
-
-	constructor (private redisService: IRedisService) {
-
-		const accessSecret = process.env.ACCESS_TOKEN_SECRET;
-		const refreshSecret = process.env.REFRESH_TOKEN_SECRET
-
-		if (!accessSecret|| !refreshSecret) {
-			throw new Error('No secrets set in env file');
-		}
-
-		this.ACCESS_TOKEN_SECRET = accessSecret;
-		this.REFRESH_TOKEN_SECRET = refreshSecret;
-	}
+	constructor (
+		private redisService: IRedisService,
+		private config: IAuthConfig
+	) {}
 
 	private generateAccessToken(payload: object) {
-		return jwt.sign(payload, this.ACCESS_TOKEN_SECRET, {expiresIn: '15m'})
+		return jwt.sign(
+			payload, 
+			this.config.ACCESS_TOKEN_SECRET, 
+			{ expiresIn: this.config.ACCESS_TOKEN_EXPIRES_IN! }
+		);
 	}
 
 	private generateRefreshToken(payload: object, tokenId: string) {
 		return jwt.sign(
 			{...payload, token_id: tokenId },
-			this.REFRESH_TOKEN_SECRET, 
-			{ expiresIn: '7d' });
+			this.config.REFRESH_TOKEN_SECRET, 
+			{ expiresIn: this.config.REFRESH_TOKEN_EXPIRES_IN! }
+		);
 	}
 
-	async refreshAccessToken(req: Request, res: Response, next: NextFunction) {
+	private verifyAndValidRefreshToken(refreshToken: string) {
+		const rawPayload = jwt.verify(refreshToken, this.config.REFRESH_TOKEN_SECRET);
+
+		const { value: payload, error } = jwtPayloadSchema.validate(rawPayload);
+
+		if (error) throw new Error(error.message);
+		return payload;
+	}
+
+	refreshAccessToken = async (req: Request, res: Response, next: NextFunction) => {
 		const { refresh_token: refreshToken } = req.body;
 
 		if (!refreshToken) return res.status(401).json({ error: 'Refresh token required' });
 
 		try {
-			const rawPayload = jwt.verify(refreshToken, this.REFRESH_TOKEN_SECRET);
-
-			const { value: payload, error } = jwtPayloadSchema.validate(rawPayload);
-
-			if (error) {
-				return res.status(400).json({ error: error });
-			}
+			const payload = this.verifyAndValidRefreshToken(refreshToken);
 
 			const genuineRefreshToken = await this.redisService.get(
 				`refresh_token:${payload.token_id}`
 			);
 
-			console.log(genuineRefreshToken);
 			if (refreshToken !== genuineRefreshToken) {
 				throw new Error('Invalid refresh token')
 			}
@@ -73,7 +70,7 @@ export default class AuthController {
 		}
 	}
 
-	async login (req: Request, res: Response, next: NextFunction) {
+	login = async (req: Request, res: Response, next: NextFunction) => {
 		try {
 			const { email, password }  = req.body;
 			const user = await User.findOne({ email: email });
@@ -98,7 +95,7 @@ export default class AuthController {
 			await this.redisService.set(
 				`refresh_token:${refreshTokenId}`,
 				refreshToken,
-				{ EX: 60 * 60 * 24 * 7 }
+				{ EX: this.config.REFRESH_TOKEN_REDIS_EXPIRES_IN }
 			)
 
 			return res.status(200).json({ 
@@ -111,17 +108,11 @@ export default class AuthController {
 		}
 	}
 
-	async logout(req: Request, res: Response, next: NextFunction) {
+	logout = async (req: Request, res: Response, next: NextFunction) => {
 		try {
 			const { refresh_token:  refreshToken } = req.body;
 
-			const rawPayload = jwt.verify(refreshToken, this.REFRESH_TOKEN_SECRET);
-
-			const { value: payload, error } = jwtPayloadSchema.validate(rawPayload);
-
-			if (error) {
-				return res.status(401).json({ error: error.message });
-			}
+			const payload = this.verifyAndValidRefreshToken(refreshToken);
 
 			const tokenId = payload.token_id;
 
@@ -134,7 +125,7 @@ export default class AuthController {
 		}
 	}
 
-	async confirmEmail(req: Request, res: Response, next: NextFunction) {
+	confirmEmail = async (req: Request, res: Response, next: NextFunction) => {
 		try {
 			const { email, code } = req.body;
 
@@ -160,7 +151,7 @@ export default class AuthController {
 		}
 	}
 
-	async register(req: Request, res: Response, next: NextFunction) {
+	register = async (req: Request, res: Response, next: NextFunction) => {
 		try {
 			const { name, email, password } = req.body;
 	
@@ -180,7 +171,11 @@ export default class AuthController {
 
 			const code = Math.floor(1000 + Math.random() * 9000).toString();
 			
-			await this.redisService.set(`email_confirm_code:${email}`, code, {EX: 600});
+			await this.redisService.set(
+				`email_confirm_code:${email}`, 
+				code, 
+				{ EX: this.config.EMAIL_CONFIRM_CODE_EXPIRES }
+			);
 
 			await sendEmail(email, 'Код подтверждения регистрации', `Ваш код подтверждения: ${code}`);
 	

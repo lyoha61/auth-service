@@ -3,6 +3,7 @@ import connect from './config/db.js';
 import { connectRedis, getRedisClient } from './config/redisClient.js';
 import RedisService from './services/redisService.js';
 import createAuthRouter from './routes/auth.routes.js';
+import { createAuthConfig } from './config/auth.config.js';
 
 export default async function createApp() {
 	await connect();
@@ -12,10 +13,12 @@ export default async function createApp() {
 	await connectRedis();
 	const redisService =  new RedisService(redisClient);
 
+	const authConfig = createAuthConfig();
+
 	const app = express();
 
 	app.use(express.json());
-	app.use('/auth', createAuthRouter(redisService));
+	app.use('/auth', createAuthRouter(redisService, authConfig));
 
 	app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 		console.error(err);
