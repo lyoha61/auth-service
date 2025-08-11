@@ -3,11 +3,12 @@ import connect from './config/db.js';
 import { connectRedis, getRedisClient } from './config/redisClient.js';
 import RedisService from './services/redisService.js';
 import createAuthRouter from './routes/auth.routes.js';
+import logger from './logger.js';
 import { createAuthConfig } from './config/auth.config.js';
 
 export default async function createApp() {
 	await connect();
-	console.log('MongoDB connected ✅');
+	logger.info('MongoDB connected ✅');
 
 	const redisClient = await getRedisClient();
 	await connectRedis();

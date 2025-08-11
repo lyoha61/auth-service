@@ -18,6 +18,8 @@
     // "types": ["node"],
     // and npm install -D @types/node
 
+    "experimentalDecorators": true,
+
     // Other Outputs
     "sourceMap": true,
     "declaration": true,

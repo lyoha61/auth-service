@@ -7,6 +7,8 @@ import jwt from "jsonwebtoken";
 import { jwtPayloadSchema } from "../validations/jwt.js";
 import { IRedisService } from "../interfaces/redisService.js";
 import { IAuthConfig } from "../config/auth.config.js";
+import { LogMethod } from "../decorators/logMethod.js";
+import Autobind from "../decorators/autobind.js";
 
 
 export default class AuthController {
@@ -41,7 +43,9 @@ export default class AuthController {
 		return payload;
 	}
 
-	refreshAccessToken = async (req: Request, res: Response, next: NextFunction) => {
+	@Autobind
+	@LogMethod()
+	async refreshAccessToken (req: Request, res: Response, next: NextFunction) {
 		const { refresh_token: refreshToken } = req.body;
 
 		if (!refreshToken) return res.status(401).json({ error: 'Refresh token required' });
@@ -70,7 +74,9 @@ export default class AuthController {
 		}
 	}
 
-	login = async (req: Request, res: Response, next: NextFunction) => {
+	@Autobind
+	@LogMethod()
+	async login (req: Request, res: Response, next: NextFunction) {
 		try {
 			const { email, password }  = req.body;
 			const user = await User.findOne({ email: email });
@@ -108,7 +114,9 @@ export default class AuthController {
 		}
 	}
 
-	logout = async (req: Request, res: Response, next: NextFunction) => {
+	@Autobind
+	@LogMethod()
+	async logout (req: Request, res: Response, next: NextFunction) {
 		try {
 			const { refresh_token:  refreshToken } = req.body;
 
@@ -125,7 +133,9 @@ export default class AuthController {
 		}
 	}
 
-	confirmEmail = async (req: Request, res: Response, next: NextFunction) => {
+	@Autobind
+	@LogMethod()
+	async confirmEmail (req: Request, res: Response, next: NextFunction) {
 		try {
 			const { email, code } = req.body;
 
@@ -151,7 +161,9 @@ export default class AuthController {
 		}
 	}
 
-	register = async (req: Request, res: Response, next: NextFunction) => {
+	@Autobind
+	@LogMethod()
+	async register(req: Request, res: Response, next: NextFunction) {
 		try {
 			const { name, email, password } = req.body;
 	
