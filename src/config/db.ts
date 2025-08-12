@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import logger from "../logger.js";
 
 export default async function connect() {
 	try {
@@ -10,6 +11,6 @@ export default async function connect() {
 
 		await mongoose.connect(uri);
 	} catch (err) {
-		console.log('❌ Failed to connect');
+		logger.info('Failed to connect');
 	}
 }

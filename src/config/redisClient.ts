@@ -1,4 +1,5 @@
 import { createClient, RedisClientType } from "redis";
+import logger from "../logger.js";
 
 let redisClient: RedisClientType | null = null;
 
@@ -19,5 +20,10 @@ export async function getRedisClient (): Promise< RedisClientType > {
 
 export async function connectRedis(): Promise<void> {
 	const client = await getRedisClient();
-	if (!client.isOpen) await client.connect();
+	if (!client.isOpen) {
+		client.on('connect', () => logger.info('Redis client connected'));
+		client.on('error', (err) => logger.error('Redis Client Error', err));
+		client.on('reconnecting', () => logger.warn('Redis client reconnecting'));
+		await client.connect()
+	};
 }

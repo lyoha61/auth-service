@@ -9,7 +9,7 @@ import { AppError } from './errors/AppError.js';
 
 export default async function createApp() {
 	await connect();
-	logger.info('MongoDB connected ✅');
+	logger.info('MongoDB connected');
 
 	const redisClient = await getRedisClient();
 	await connectRedis();

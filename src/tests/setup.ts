@@ -5,15 +5,26 @@ import dotenv from 'dotenv'
 dotenv.config() 
 
 jest.mock('redis', () => ({
-  createClient: jest.fn(() => ({
-      connect: jest.fn<() => Promise <void>>().mockResolvedValue(undefined),
-      on: jest.fn(),
-      get: jest.fn<() => Promise <string>>().mockResolvedValue('mocked_value'),
-      set: jest.fn<() => Promise<string>>().mockResolvedValue('OK'),
-      flushAll: jest.fn<() => Promise<string>>().mockResolvedValue('OK'),
-      quit: jest.fn<() => Promise<string>>().mockResolvedValue('OK'),
-      isOpen: true,
-    })),
+  createClient: jest.fn(() => {
+      let isOpen = false;
+      return {
+        connect: jest.fn<() => Promise <void>>( async () => {
+          isOpen = true;
+        }),
+        on: jest.fn(),
+        get: jest.fn<() => Promise <string>>().mockResolvedValue('mocked_value'),
+        set: jest.fn<() => Promise<string>>().mockResolvedValue('OK'),
+        flushAll: jest.fn<() => Promise<string>>().mockResolvedValue('OK'),
+        quit: jest.fn<() => Promise<string>>(async () => {
+          isOpen = false;
+          return "OK"
+        }),
+          get isOpen() {
+          return isOpen;
+        }
+      }
+     
+    }),
 }));
 
 jest.mock('nodemailer', () => ({
