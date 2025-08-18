@@ -3,6 +3,7 @@ services:
     build: .
     ports:
       - "3000:3000"
+    container_name: auth_service
     volumes:
       - ./:/app
       - /app/node_modules  
@@ -10,28 +11,34 @@ services:
     env_file:
       - .env
     depends_on:
-      - mongodb
+      - postgres
       - mailhog
       - redis
   
   mailhog:
     image: mailhog/mailhog
-    container_name: mailhog
+    container_name: auth_mailhog
     platform: linux/amd64
     ports:
       - "1025:1025" 
       - "8025:8025"
-  mongodb:
-    image: mongo:latest
+  postgres:
+    image: postgres:16
+    container_name: auth_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: authdb
     ports:
-      - "27017:27017"
+      - "5432:5432"
     volumes:
-      - mongodata:/data/db
+      - pgdata:/var/lib/postgresql/data
   
   redis:
     image: redis:latest
+    container_name: auth_redis
     ports:
       - "6379:6379"
 
 volumes:
-  mongodata:
+  pgdata:
