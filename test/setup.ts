@@ -38,7 +38,7 @@ beforeAll(async () => {
   redis = connectRedis();
 
   execSync('docker compose -f docker-compose.test.yml up -d');
-  process.env.DATABASE_URL="postgresql://postgres:postgres@localhost:5433/authdb_test";
+  process.env.DATABASE_URL="postgresql://postgres:postgres@localhost:5434/authdb_test";
   execSync('npx prisma migrate deploy', { env: {...process.env},  stdio: 'inherit' });
 
 });
