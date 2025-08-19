@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv'
 dotenv.config() 
 
@@ -33,45 +32,20 @@ jest.mock('nodemailer', () => ({
   })
 }));
 
-let mongo: MongoMemoryServer;
 let redis: any
 
 beforeAll(async () => {
   const { connectRedis } = await import('../config/redisClient.js');
   redis = connectRedis();
 
-
-  mongo = await MongoMemoryServer.create();
-  const uri = mongo.getUri();
-
-  process.env.MONGO_URI = uri;
-
-  await mongoose.connect(uri, {
-    dbName: 'test',
-  });
 });
 
 beforeEach(async () => {
-	  if (mongoose.connection.readyState !== 1) {
-    await new Promise<void>((resolve) => {
-      mongoose.connection.once('connected', () => resolve());
-    });
-  }
-
-  if (!mongoose.connection.db) {
-    throw new Error('MongoDB not connected');
-  }
-  
-  const collections = await mongoose.connection.db.collections();
-  for (let collection of collections) {
-    await collection.deleteMany({});
-  }
-
+	 
   await redis.flushAll?.();
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongo.stop();
+
   await redis.quit?.();
 });

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import AuthController from '../controllers/AuthController.js';
+import AuthController from '../controllers/auth.controller.js';
 import validateRegisterMiddleware from '../middlewares/validateRegisterMiddleware.js';
 import validateLoginMiddleware from '../middlewares/validateLoginMiddleware.js';
 import { IRedisService } from "../interfaces/redisService.js";

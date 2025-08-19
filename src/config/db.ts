@@ -1,16 +1,22 @@
-import mongoose from "mongoose";
+import pkg from "@prisma/client";
+import { AppError } from "../errors/AppError.js";
+
 import logger from "../logger.js";
 
-export default async function connect() {
+const { PrismaClient } = pkg;
+
+export const prisma = new PrismaClient();
+
+export default async function connectDatabase() {
 	try {
-		const uri = process.env.MONGO_URI;
-
-		if (!uri) {
-			throw new Error("MONGO_URI is not defined");
+		await prisma.$connect();
+		logger.info("Database connected");
+	} catch (err: unknown) {
+		if (err instanceof AppError) {
+			logger.error(err.message);
+		} else {
+			logger.error("Uknown error", err);
 		}
-
-		await mongoose.connect(uri);
-	} catch (err) {
-		logger.info('Failed to connect');
+		throw err;
 	}
 }

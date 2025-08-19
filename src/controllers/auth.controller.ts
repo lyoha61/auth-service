@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import sendEmail from "../services/mailService.js";
-import User from "../models/User.js";
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from "jsonwebtoken";
@@ -10,6 +9,7 @@ import { IAuthConfig } from "../config/auth.config.js";
 import { LogMethod } from "../decorators/logMethod.js";
 import Autobind from "../decorators/autobind.js";
 import { AppError } from "../errors/AppError.js";
+import { prisma } from "../config/db.js";
 
 
 export default class AuthController {
@@ -74,20 +74,22 @@ export default class AuthController {
 	@LogMethod()
 	async login (req: Request, res: Response, next: NextFunction) {
 		const { email, password }  = req.body;
-		const user = await User.findOne({ email: email });
+		const user = await prisma.user.findUnique({
+			where: { email }
+		});
 
 		if (!user) throw new AppError('Неверный email или пароль', 401);
 
 		const isMatch = await bcrypt.compare(password, user.password!);
 		if (!isMatch) throw new AppError('Неверный email или пароль', 401);
 
-		const { password: _, ...userData } = user.toObject();
+		const { password: _, ...userData } = user;
 
 		const refreshTokenId = uuidv4();
 
-		const accessToken = this.generateAccessToken({ id: userData._id});
+		const accessToken = this.generateAccessToken({ id: userData.id});
 		const refreshToken = this.generateRefreshToken(
-			{ id: userData._id }, 
+			{ id: userData.id }, 
 			refreshTokenId
 		);
 
@@ -133,7 +135,10 @@ export default class AuthController {
 			return res.status(400).json({ error: 'Неверный код подтверждения' });
 		}
 
-		await User.updateOne({ email }, { email_verified: true });
+		await prisma.user.update({
+			where: { email },
+			data: { email_verified: true }
+		});
 
 		await this.redisService.del(`email_confirm_code:${email}`)
 
@@ -147,7 +152,9 @@ export default class AuthController {
 	async register(req: Request, res: Response, next: NextFunction) {
 		const { name, email, password } = req.body;
 
-		const exists = await User.findOne({ email });
+		const exists = await prisma.user.findUnique({
+			where: { email }
+		});
 
 		if (exists) {
 			return res.status(409).json({ 
@@ -157,9 +164,13 @@ export default class AuthController {
 
 		const hashedPassword = await bcrypt.hash(password, 10);
 
-		const user = new User({ name, email, password: hashedPassword });
-
-		await user.save();
+		const user = await prisma.user.create({
+			data: {
+				username: name,
+				email: email,
+				password: hashedPassword
+			}
+		});
 
 		const code = Math.floor(1000 + Math.random() * 9000).toString();
 		
@@ -170,10 +181,8 @@ export default class AuthController {
 		);
 
 		await sendEmail(email, 'Код подтверждения регистрации', `Ваш код подтверждения: ${code}`);
-
-		const { _id: userId, name: userName, email: userEmail} = user.toObject();
 		
-		const userData = { id: userId, name: userName, email: userEmail }
+		const userData = { id: user.id, name: user.username, email: user.email }
 
 		return res.status(201).json({message: 'Пользователь создан', user: userData});
 

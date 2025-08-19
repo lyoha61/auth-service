@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import connect from './config/db.js';
+import connectDatabase from './config/db.js';
 import { connectRedis, getRedisClient } from './config/redisClient.js';
 import RedisService from './services/redisService.js';
 import createAuthRouter from './routes/auth.routes.js';
@@ -8,8 +8,7 @@ import { createAuthConfig } from './config/auth.config.js';
 import { AppError } from './errors/AppError.js';
 
 export default async function createApp() {
-	await connect();
-	logger.info('MongoDB connected');
+	await connectDatabase();
 
 	const redisClient = await getRedisClient();
 	await connectRedis();
