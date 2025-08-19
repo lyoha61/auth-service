@@ -8,7 +8,7 @@
     "watch": "tsc --watch",
     "start": "node --require dotenv/config dist/server.js",
     "dev": "concurrently \"npm run watch\" \"nodemon dist/server.js\" ",
-    "test": "node  --experimental-vm-modules  node_modules/jest/bin/jest.js --config src/config/jest.config.js"
+    "test": "node  --experimental-vm-modules  node_modules/jest/bin/jest.js --config jest.config.js"
   },
   "author": "",
   "license": "ISC",

@@ -1,9 +1,10 @@
 export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  rootDir: '../',
-  testMatch: ['<rootDir>/tests/**/*.test.ts'],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  rootDir: './',
+  testMatch: ['<rootDir>/test/**/*-spec.ts'],
+  setupFiles: ['dotenv/config'],
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   extensionsToTreatAsEsm: ['.ts'],
   globals: {
     'ts-jest': {

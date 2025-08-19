@@ -1,7 +1,6 @@
 import { jest } from '@jest/globals';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import dotenv from 'dotenv'
-dotenv.config() 
+import { execSync } from 'child_process';
+
 
 jest.mock('redis', () => ({
   createClient: jest.fn(() => {
@@ -32,11 +31,15 @@ jest.mock('nodemailer', () => ({
   })
 }));
 
-let redis: any
+let redis: any;
 
 beforeAll(async () => {
-  const { connectRedis } = await import('../config/redisClient.js');
+  const { connectRedis } = await import('../src/config/redisClient.js');
   redis = connectRedis();
+
+  execSync('docker compose -f docker-compose.test.yml up -d');
+  process.env.DATABASE_URL="postgresql://postgres:postgres@localhost:5433/authdb_test";
+  execSync('npx prisma migrate deploy', { env: {...process.env},  stdio: 'inherit' });
 
 });
 
@@ -46,6 +49,6 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-
   await redis.quit?.();
+  execSync('docker compose -f docker-compose.test.yml down -v');
 });

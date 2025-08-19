@@ -4,7 +4,7 @@ import { Express } from 'express';
 let app: Express;
 
 beforeAll(async () => {
-  const {default: createApp } = await import ('../app.js');
+  const {default: createApp } = await import ('../src/app.js');
   app = await createApp();
 })
 
